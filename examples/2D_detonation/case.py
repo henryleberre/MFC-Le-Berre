@@ -8,7 +8,7 @@ import json, argparse
 import cantera as ct
 
 parser = argparse.ArgumentParser(
-    prog="1D_reactive_shocktube",
+    prog="2D_detonation",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 parser.add_argument("--mfc", type=json.loads, default='{}', metavar="DICT",
@@ -30,9 +30,11 @@ u_l = 0
 u_r = -487.34
 
 L  = 0.12
-Nx = int(400 * args.scale)
-dx = L/Nx
-dt = dx/abs(u_r)*0.02
+Nx = 2*400 * args.scale
+Ny = 200 * args.scale
+dx =   2*L/Nx
+dy = (L/2)/Ny
+dt = min(dx,dy)/abs(u_r)*0.05*0.1*0.2
 Tend=230e-6
 
 NT=int(Tend/dt)
@@ -46,15 +48,17 @@ case = {
 
     # Computational Domain Parameters ==========================================
     'x_domain%beg'                 : 0,
-    'x_domain%end'                 : L,
+    'x_domain%end'                 : L*2,
+    'y_domain%beg'                 : 0,
+    'y_domain%end'                 : L/2,
     'm'                            : Nx,
-    'n'                            : 0,
+    'n'                            : Ny,
     'p'                            : 0,
     'dt'                           : float(dt),
     't_step_start'                 : 0,
     't_step_stop'                  : NT,
     't_step_save'                  : NS,
-    't_step_print'                 : NS,
+    't_step_print'                 : 10,
     'parallel_io'                  : 'F' if args.mfc.get("mpi", True) else 'F',
 
     # Simulation Algorithm Parameters ==========================================
@@ -72,8 +76,10 @@ case = {
     'riemann_solver'               : 2,
     'wave_speeds'                  : 1,
     'avg_state'                    : 2,
-    'bc_x%beg'                     :-2,
+    'bc_x%beg'                     :-3,
     'bc_x%end'                     :-3,
+    'bc_y%beg'                     :-1,
+    'bc_y%end'                     :-1,
 
     # Chemistry ================================================================
     'chemistry'                    : 'F' if not args.chemistry else 'T',
@@ -85,25 +91,33 @@ case = {
     # Formatted Database Files Structure Parameters ============================
     'format'                       : 1,
     'precision'                    : 2,
-    'prim_vars_wrt'                : 'T',
-    'chem_wrt_T'                   : 'T',
+    #'prim_vars_wrt'                : 'T',
+    'chem_wrt_T'                   : 'F',
     # ==========================================================================
+    'rho_wrt' : 'T',
 
     # ==========================================================================
-    'patch_icpp(1)%geometry'       : 1,
-    'patch_icpp(1)%x_centroid'     : L/4,
-    'patch_icpp(1)%length_x'       : L/2,
-    'patch_icpp(1)%vel(1)'         : u_l,
-    'patch_icpp(1)%pres'           : sol_L.P,
+    'patch_icpp(1)%geometry'       : 7,
+    'patch_icpp(1)%x_centroid'     : L/2,
+    'patch_icpp(1)%y_centroid'     : L/4,
+    'patch_icpp(1)%length_x'       : L,
+    'patch_icpp(1)%length_y'       : L/2,
+    'patch_icpp(1)%hcid'           : 666,
+    'patch_icpp(1)%vel(1)'         : 0,
+    'patch_icpp(1)%vel(2)'         : 0,
+    'patch_icpp(1)%pres'           : sol_R.P,
     'patch_icpp(1)%alpha(1)'       : 1,
-    'patch_icpp(1)%alpha_rho(1)'   : sol_L.density,
+    'patch_icpp(1)%alpha_rho(1)'   : sol_R.density,
     # ==========================================================================
 
     # ==========================================================================
-    'patch_icpp(2)%geometry'       : 1,
-    'patch_icpp(2)%x_centroid'     : 3*L/4,
-    'patch_icpp(2)%length_x'       : L/2,
-    'patch_icpp(2)%vel(1)'         : u_r,
+    'patch_icpp(2)%geometry'       : 3,
+    'patch_icpp(2)%x_centroid'     : 3*L/2,
+    'patch_icpp(2)%y_centroid'     : L/4,
+    'patch_icpp(2)%length_x'       : L,
+    'patch_icpp(2)%length_y'       : L/2,
+    'patch_icpp(2)%vel(1)'         : 0,
+    'patch_icpp(2)%vel(2)'         : 0,
     'patch_icpp(2)%pres'           : sol_R.P,
     'patch_icpp(2)%alpha(1)'       : 1,
     'patch_icpp(2)%alpha_rho(1)'   : sol_R.density,
@@ -117,9 +131,9 @@ case = {
 
 if args.chemistry:
     for i in range(len(sol_L.Y)):
-        case[f'chem_wrt_Y({i + 1})']    = 'T'
+        #case[f'chem_wrt_Y({i + 1})'] = 'T'
         case[f'patch_icpp(1)%Y({i+1})'] = sol_L.Y[i]
-        case[f'patch_icpp(2)%Y({i+1})'] = sol_R.Y[i]
+        case[f'patch_icpp(2)%Y({i+1})'] = sol_L.Y[i]
 
 if __name__ == '__main__':
     print(json.dumps(case))
