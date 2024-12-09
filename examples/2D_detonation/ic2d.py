@@ -25,7 +25,7 @@ with open("examples/2D_detonation/ic_decl.f90", "w") as f:
         nx = len(case.get_data()[0][str(var_init)])
 
         if var_wrt != 3:
-            elems = [str(x) for x in case.get_data()[14694][str(var_init)]]
+            elems = [str(x) for x in case.get_data()[89600][str(var_init)]]
         else:
             elems = [0.0] * nx
 

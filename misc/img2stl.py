@@ -9,6 +9,7 @@ parser.add_argument('output', type=str, help='Path to the output OBJ file')
 VARS = vars(parser.parse_args())
 
 img = Image.open(VARS['input'])
+img = img.resize((img.width // 10, img.height // 10))
 
 W, H = img.size
 

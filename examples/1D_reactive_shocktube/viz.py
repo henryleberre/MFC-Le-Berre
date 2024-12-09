@@ -56,7 +56,7 @@ for step in tqdm(case.get_timesteps(), desc="Rendering Frames"):
     axes[0, 2].set_ylabel("$E$")
 
     plt.tight_layout()
-    plt.savefig(f"viz/{step:06d}.png")
+    plt.savefig(f"viz/{step}.png")
     plt.close()
 
 subprocess.run([
